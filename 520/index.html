@@ -200,13 +200,14 @@
     function startMusic() {
       if (musicPlaying) return;
       bgm.currentTime = LOOP_START;
-      bgm.play().then(function() {
-        musicPlaying = true;
-        userStoppedMusic = false;
-        document.getElementById('musicBtn').classList.remove('off');
-        document.getElementById('musicBtn').textContent = '🎵';
-      }).catch(function(e) {
-        document.getElementById('musicBtn').textContent = '🚫';
+      bgm.addEventListener('seeked', function onSeeked() {
+        bgm.removeEventListener('seeked', onSeeked);
+        bgm.play().then(function() {
+          musicPlaying = true;
+          userStoppedMusic = false;
+          document.getElementById('musicBtn').classList.remove('off');
+          document.getElementById('musicBtn').textContent = '🎵';
+        });
       });
     }
 
