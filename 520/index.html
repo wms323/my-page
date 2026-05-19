@@ -174,75 +174,28 @@
   <div class="hint">点一下试试</div>
   <div class="counter" id="counter"></div>
 
-  <div id="ytPlayer"></div>
+  <audio id="bgm" preload="auto" src="https://cn-sdjn-fx-01-03.bilivideo.com/upgcxcode/04/35/1303563504/1303563504-1-30216.m4s?e=ig8euxZM2rNcNbdlhoNvNC8BqJIzNbfqXBvEqxTEto8BTrNvN0GvT90W5JZMkX_YN0MvXg8gNEV4NC8xNEV4N03eN0B5tZlqNxTEto8BTrNvNeZVuJ10Kj_g2UB02J0mN0B5tZlqNCNEto8BTrNvNC7MTX502C8f2jmMQJ6mqF2fka1mqx6gqj0eN0B599M=&platform=pc&trid=00004bba32ad041f43f1a635b1bdec197ccu&deadline=1779193966&mid=0&gen=playurlv3&oi=985835937&nbs=1&os=bcache&og=hw&uipk=5&upsig=61aef3f495627e267947b84ff2c436ae&uparams=e,platform,trid,deadline,mid,gen,oi,nbs,os,og,uipk&cdnid=6803&bvc=vod&nettype=0&bw=53553&f=u_0_0&qn_dyeid=bbed29e3ece91d640035e8876a0c3c4e&agrr=1&np=151339420&buvid=&build=0&dl=0&orderid=0,3"></audio>
 
   <script>
-    // YouTube IFrame API
-    const tag = document.createElement('script');
-    tag.src = 'https://www.youtube.com/iframe_api';
-    const firstScriptTag = document.getElementsByTagName('script')[0];
-    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-
-    let ytPlayer = null;
+    const bgm = document.getElementById('bgm');
     let musicPlaying = false;
     let userStoppedMusic = false;
-    let ytReady = false;
-    let pendingStart = false;
-    const LOOP_START = 20;
-    const LOOP_END = 100;
-
-    function onYouTubeIframeAPIReady() {
-      ytPlayer = new YT.Player('ytPlayer', {
-        videoId: 'NLW_SsllEf0',
-        width: 1,
-        height: 1,
-        playerVars: {
-          autoplay: 0,
-          controls: 0,
-          disablekb: 1,
-          fs: 0,
-          modestbranding: 1,
-          playsinline: 1,
-        },
-        events: {
-          onReady: function() {
-            ytReady = true;
-            if (pendingStart) { startMusic(); pendingStart = false; }
-          },
-          onStateChange: function(e) {
-            if (e.data === YT.PlayerState.PLAYING) {
-              watchLoop();
-            }
-          }
-        }
-      });
-    }
-
-    function watchLoop() {
-      if (!musicPlaying) return;
-      const t = ytPlayer.getCurrentTime();
-      if (t >= LOOP_END) {
-        ytPlayer.seekTo(LOOP_START, true);
-      }
-      setTimeout(function() { if (musicPlaying) watchLoop(); }, 300);
-    }
 
     function startMusic() {
       if (musicPlaying) return;
-      if (!ytReady) { pendingStart = true; return; }
-      musicPlaying = true;
-      userStoppedMusic = false;
-      ytPlayer.seekTo(LOOP_START, true);
-      ytPlayer.playVideo();
-      document.getElementById('musicBtn').classList.remove('off');
-      document.getElementById('musicBtn').textContent = '🎵';
+      bgm.play().then(function() {
+        musicPlaying = true;
+        userStoppedMusic = false;
+        document.getElementById('musicBtn').classList.remove('off');
+        document.getElementById('musicBtn').textContent = '🎵';
+      }).catch(function() {});
     }
 
     function stopMusic() {
       if (!musicPlaying) return;
+      bgm.pause();
       musicPlaying = false;
       userStoppedMusic = true;
-      ytPlayer.pauseVideo();
       document.getElementById('musicBtn').classList.add('off');
       document.getElementById('musicBtn').textContent = '🔇';
     }
