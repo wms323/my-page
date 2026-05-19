@@ -171,7 +171,9 @@
   <script>
     // Music player
     let audioCtx = null;
+    let masterGain = null;
     let musicPlaying = false;
+    let userStoppedMusic = false;
     let musicTimer = null;
 
     const melody = [
@@ -184,17 +186,26 @@
     const noteDuration = 0.4;
     let noteIndex = 0;
 
+    function ensureCtx() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        masterGain = audioCtx.createGain();
+        masterGain.gain.value = 0.5;
+        masterGain.connect(audioCtx.destination);
+      }
+    }
+
     function playNote(freq, time, duration) {
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.type = 'sine';
       osc.frequency.value = freq;
       gain.gain.setValueAtTime(0, time);
-      gain.gain.linearRampToValueAtTime(0.15, time + 0.03);
-      gain.gain.linearRampToValueAtTime(0.1, time + duration * 0.7);
+      gain.gain.linearRampToValueAtTime(0.25, time + 0.03);
+      gain.gain.linearRampToValueAtTime(0.15, time + duration * 0.7);
       gain.gain.linearRampToValueAtTime(0, time + duration);
       osc.connect(gain);
-      gain.connect(audioCtx.destination);
+      gain.connect(masterGain);
       osc.start(time);
       osc.stop(time + duration);
     }
@@ -212,8 +223,10 @@
 
     function startMusic() {
       if (musicPlaying) return;
-      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      ensureCtx();
+      masterGain.gain.value = 0.5;
       musicPlaying = true;
+      userStoppedMusic = false;
       noteIndex = 0;
       document.getElementById('musicBtn').classList.remove('off');
       document.getElementById('musicBtn').textContent = '🎵';
@@ -222,7 +235,9 @@
 
     function stopMusic() {
       musicPlaying = false;
+      userStoppedMusic = true;
       clearTimeout(musicTimer);
+      masterGain.gain.value = 0;
       document.getElementById('musicBtn').classList.add('off');
       document.getElementById('musicBtn').textContent = '🔇';
     }
@@ -281,7 +296,7 @@
     }
 
     body.addEventListener('click', (e) => {
-      if (!musicPlaying) startMusic();
+      if (!musicPlaying && !userStoppedMusic) startMusic();
       clickCount++;
       const x = e.clientX;
       const y = e.clientY;
