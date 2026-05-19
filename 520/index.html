@@ -127,6 +127,12 @@
     .music-btn:hover { background: rgba(255,255,255,0.4); }
     .music-btn.off { opacity: 0.5; }
 
+    #ytPlayer {
+      position: fixed;
+      bottom: -9999px;
+      left: -9999px;
+    }
+
     .message-pop {
       position: fixed;
       pointer-events: none;
@@ -168,76 +174,75 @@
   <div class="hint">点一下试试</div>
   <div class="counter" id="counter"></div>
 
+  <div id="ytPlayer"></div>
+
   <script>
-    // Music player
-    let audioCtx = null;
-    let masterGain = null;
+    // YouTube IFrame API
+    const tag = document.createElement('script');
+    tag.src = 'https://www.youtube.com/iframe_api';
+    const firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+    let ytPlayer = null;
     let musicPlaying = false;
     let userStoppedMusic = false;
-    let musicTimer = null;
+    let ytReady = false;
+    let pendingStart = false;
+    const LOOP_START = 20;
+    const LOOP_END = 100;
 
-    const melody = [
-      523.25, 659.25, 783.99, 880.00, 783.99, 659.25,
-      587.33, 523.25, 587.33, 659.25, 587.33, 523.25,
-      440.00, 392.00, 440.00, 523.25,
-      587.33, 523.25, 440.00, 392.00, 349.23, 392.00, 440.00,
-      523.25, 659.25, 587.33, 523.25, 440.00, 523.25,
-    ];
-    const noteDuration = 0.4;
-    let noteIndex = 0;
-
-    function ensureCtx() {
-      if (!audioCtx) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        masterGain = audioCtx.createGain();
-        masterGain.gain.value = 0.5;
-        masterGain.connect(audioCtx.destination);
-      }
+    function onYouTubeIframeAPIReady() {
+      ytPlayer = new YT.Player('ytPlayer', {
+        videoId: 'NLW_SsllEf0',
+        width: 1,
+        height: 1,
+        playerVars: {
+          autoplay: 0,
+          controls: 0,
+          disablekb: 1,
+          fs: 0,
+          modestbranding: 1,
+          playsinline: 1,
+        },
+        events: {
+          onReady: function() {
+            ytReady = true;
+            if (pendingStart) { startMusic(); pendingStart = false; }
+          },
+          onStateChange: function(e) {
+            if (e.data === YT.PlayerState.PLAYING) {
+              watchLoop();
+            }
+          }
+        }
+      });
     }
 
-    function playNote(freq, time, duration) {
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.type = 'sine';
-      osc.frequency.value = freq;
-      gain.gain.setValueAtTime(0, time);
-      gain.gain.linearRampToValueAtTime(0.25, time + 0.03);
-      gain.gain.linearRampToValueAtTime(0.15, time + duration * 0.7);
-      gain.gain.linearRampToValueAtTime(0, time + duration);
-      osc.connect(gain);
-      gain.connect(masterGain);
-      osc.start(time);
-      osc.stop(time + duration);
-    }
-
-    function scheduleLoop() {
+    function watchLoop() {
       if (!musicPlaying) return;
-      const now = audioCtx.currentTime;
-      for (let i = 0; i < melody.length; i++) {
-        const note = melody[(noteIndex + i) % melody.length];
-        playNote(note, now + i * noteDuration, noteDuration * 0.9);
+      const t = ytPlayer.getCurrentTime();
+      if (t >= LOOP_END) {
+        ytPlayer.seekTo(LOOP_START, true);
       }
-      noteIndex = (noteIndex + melody.length) % melody.length;
-      musicTimer = setTimeout(scheduleLoop, melody.length * noteDuration * 1000 - 100);
+      setTimeout(function() { if (musicPlaying) watchLoop(); }, 300);
     }
 
     function startMusic() {
       if (musicPlaying) return;
-      ensureCtx();
-      masterGain.gain.value = 0.5;
+      if (!ytReady) { pendingStart = true; return; }
       musicPlaying = true;
       userStoppedMusic = false;
-      noteIndex = 0;
+      ytPlayer.seekTo(LOOP_START, true);
+      ytPlayer.playVideo();
       document.getElementById('musicBtn').classList.remove('off');
       document.getElementById('musicBtn').textContent = '🎵';
-      scheduleLoop();
     }
 
     function stopMusic() {
+      if (!musicPlaying) return;
       musicPlaying = false;
       userStoppedMusic = true;
-      clearTimeout(musicTimer);
-      masterGain.gain.value = 0;
+      ytPlayer.pauseVideo();
       document.getElementById('musicBtn').classList.add('off');
       document.getElementById('musicBtn').textContent = '🔇';
     }
