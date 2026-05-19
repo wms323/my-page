@@ -156,7 +156,7 @@
 </head>
 <body>
 
-  <button class="music-btn" id="musicBtn" title="音乐" onclick="toggleMusic()">🎵</button>
+  <button class="music-btn" id="musicBtn" title="音乐">🎵</button>
 
   <div class="main">
     <div class="number">
@@ -227,15 +227,13 @@
       document.getElementById('musicBtn').textContent = '🔇';
     }
 
-    function toggleMusic() {
+    function toggleMusic(e) {
+      e.stopPropagation();
       if (musicPlaying) { stopMusic(); }
       else { startMusic(); }
     }
 
-    // Start music on first interaction
-    document.addEventListener('click', function once() {
-      if (!musicPlaying) startMusic();
-    }, { once: true });
+    document.getElementById('musicBtn').addEventListener('click', toggleMusic);
 
     const messages = [
       '喜欢你', '好喜欢你', '最喜欢你', '超喜欢你',
@@ -283,6 +281,7 @@
     }
 
     body.addEventListener('click', (e) => {
+      if (!musicPlaying) startMusic();
       clickCount++;
       const x = e.clientX;
       const y = e.clientY;
