@@ -174,12 +174,14 @@
   <div class="hint">点一下试试</div>
   <div class="counter" id="counter"></div>
 
-  <audio id="bgm" preload="auto" loop src="bgm.m4a"></audio>
+  <audio id="bgm" preload="auto" src="bgm.m4a"></audio>
 
   <script>
     const bgm = document.getElementById('bgm');
     let musicPlaying = false;
     let userStoppedMusic = false;
+    const LOOP_START = 90;
+    const LOOP_END = 240;
 
     bgm.addEventListener('error', function() {
       document.getElementById('musicBtn').textContent = '❌';
@@ -189,8 +191,15 @@
       document.getElementById('musicBtn').textContent = '🎵';
     });
 
+    bgm.addEventListener('timeupdate', function() {
+      if (musicPlaying && bgm.currentTime >= LOOP_END) {
+        bgm.currentTime = LOOP_START;
+      }
+    });
+
     function startMusic() {
       if (musicPlaying) return;
+      bgm.currentTime = LOOP_START;
       bgm.play().then(function() {
         musicPlaying = true;
         userStoppedMusic = false;
@@ -198,7 +207,6 @@
         document.getElementById('musicBtn').textContent = '🎵';
       }).catch(function(e) {
         document.getElementById('musicBtn').textContent = '🚫';
-        console.log('audio error:', e);
       });
     }
 
