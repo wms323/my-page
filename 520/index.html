@@ -110,6 +110,23 @@
       z-index: 10;
     }
 
+    .music-btn {
+      position: fixed;
+      top: 2rem;
+      left: 2rem;
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: 50%;
+      border: none;
+      background: rgba(255,255,255,0.2);
+      color: #fff;
+      font-size: 1.2rem;
+      cursor: pointer;
+      z-index: 20;
+    }
+    .music-btn:hover { background: rgba(255,255,255,0.4); }
+    .music-btn.off { opacity: 0.5; }
+
     .message-pop {
       position: fixed;
       pointer-events: none;
@@ -139,6 +156,8 @@
 </head>
 <body>
 
+  <button class="music-btn" id="musicBtn" title="音乐" onclick="toggleMusic()">🎵</button>
+
   <div class="main">
     <div class="number">
       <span>5</span><span>2</span><span>0</span>
@@ -150,6 +169,74 @@
   <div class="counter" id="counter"></div>
 
   <script>
+    // Music player
+    let audioCtx = null;
+    let musicPlaying = false;
+    let musicTimer = null;
+
+    const melody = [
+      523.25, 659.25, 783.99, 880.00, 783.99, 659.25,
+      587.33, 523.25, 587.33, 659.25, 587.33, 523.25,
+      440.00, 392.00, 440.00, 523.25,
+      587.33, 523.25, 440.00, 392.00, 349.23, 392.00, 440.00,
+      523.25, 659.25, 587.33, 523.25, 440.00, 523.25,
+    ];
+    const noteDuration = 0.4;
+    let noteIndex = 0;
+
+    function playNote(freq, time, duration) {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0, time);
+      gain.gain.linearRampToValueAtTime(0.15, time + 0.03);
+      gain.gain.linearRampToValueAtTime(0.1, time + duration * 0.7);
+      gain.gain.linearRampToValueAtTime(0, time + duration);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(time);
+      osc.stop(time + duration);
+    }
+
+    function scheduleLoop() {
+      if (!musicPlaying) return;
+      const now = audioCtx.currentTime;
+      for (let i = 0; i < melody.length; i++) {
+        const note = melody[(noteIndex + i) % melody.length];
+        playNote(note, now + i * noteDuration, noteDuration * 0.9);
+      }
+      noteIndex = (noteIndex + melody.length) % melody.length;
+      musicTimer = setTimeout(scheduleLoop, melody.length * noteDuration * 1000 - 100);
+    }
+
+    function startMusic() {
+      if (musicPlaying) return;
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      musicPlaying = true;
+      noteIndex = 0;
+      document.getElementById('musicBtn').classList.remove('off');
+      document.getElementById('musicBtn').textContent = '🎵';
+      scheduleLoop();
+    }
+
+    function stopMusic() {
+      musicPlaying = false;
+      clearTimeout(musicTimer);
+      document.getElementById('musicBtn').classList.add('off');
+      document.getElementById('musicBtn').textContent = '🔇';
+    }
+
+    function toggleMusic() {
+      if (musicPlaying) { stopMusic(); }
+      else { startMusic(); }
+    }
+
+    // Start music on first interaction
+    document.addEventListener('click', function once() {
+      if (!musicPlaying) startMusic();
+    }, { once: true });
+
     const messages = [
       '喜欢你', '好喜欢你', '最喜欢你', '超喜欢你',
       '今天天气真好', '适合想你', '一直都在',
